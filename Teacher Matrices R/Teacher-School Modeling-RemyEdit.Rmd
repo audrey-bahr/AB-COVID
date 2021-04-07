@@ -1,0 +1,319 @@
+---
+title: "Teacher-School Modeling"
+date: "2/23/21"
+author: "Audrey Bahr"
+output: html_notebook
+---
+
+Import matrix of original school contacts with 6 age groups.
+```{r}
+# c_orig <- read.csv("~/Desktop/Current Projects/COVID/teacher_SEIR-master/Teacher Matrices R/school_orig_mx.csv", row.names=1)
+c_orig_filepath <- 'C:/Users/remyp/Research/COVID-19/TeacherRisk/2021 03 25 bis/teacher_SEIR-master/Teacher Model Matrices/school_orig_mx.csv'
+c_orig <- read.csv(c_orig_filepath, row.names=1)
+colnames(c_orig) <- row.names(c_orig)
+
+# UpdatedProportions5 <- read.csv("~/Desktop/Current Projects/COVID/teacher_SEIR-master/Teacher Matrices R/UpdatedProportions5.csv", stringsAsFactors=FALSE, row.names = 1)
+
+UpdatedProportions5_filepath <- 'C:/Users/remyp/Research/COVID-19/TeacherRisk/2021 03 25 bis/teacher_SEIR-master/Teacher Model Matrices/UpdatedProportions5.csv'
+UpdatedProportions5 <- read.csv(UpdatedProportions5_filepath, stringsAsFactors=FALSE, row.names = 1)
+```
+
+Designate child and adult age groups, as well as relevant parameters.
+```{r}
+k <- c(1, 2) # child age groups
+l <- c(3, 4, 5, 6) # adult age groups
+
+# contact parameters - relative rates between t, s, v
+# t/s/x corresponds to (teacher/staff/none)
+# none = group outside of school environment; their contacts are zero
+
+subgroups <- c("t", "s", "x")
+
+# Alpha and beta: relative numbers of contacts
+alpha <- 1/2
+beta <- 0.1 # .1
+
+# For 18-25 use different factors to account for university students
+alpha_18 <- 1/2
+beta_18 <- 0.45
+
+# population props in school
+s_tl <- UpdatedProportions5[1,]
+s_sl <- UpdatedProportions5[2,]
+s_xl <- UpdatedProportions5[3,]
+
+# initialize vector of new contacts
+c_new <- c()
+
+```
+
+```{r}
+# kid-kid: same as original
+for (kid_i in k) {
+  
+  for (kid_j in k) {
+    
+    square <- c_orig[kid_i, kid_j]
+    names(square) <- c(as.character(paste(kid_i, kid_j)))
+    c_new <- c(c_new, square)
+    
+  }
+}
+```
+
+```{r}
+# kid-adult
+
+for (kid in k){
+  
+  for (adult in l) {
+    # calc k-teachers in l
+    k_t_in_l <- (c_orig[kid, adult] * s_tl[[adult-2]]) / (alpha * s_sl[[adult-2]] + beta * s_xl[[adult-2]] + s_tl[[adult-2]])
+    
+    # calc k-staff
+    k_s_in_l <- alpha * s_sl[[adult-2]] * k_t_in_l / s_tl[[adult-2]] 
+    
+    # calc k-visitors
+    k_x_in_l <- beta * s_xl[[adult-2]] * k_t_in_l / s_tl[[adult-2]]
+    
+    # k-adults outside of school = 0
+    
+    # store
+    square <- c(k_t_in_l, k_s_in_l, k_x_in_l)
+    
+    names(square) <- c(as.character(paste(kid, adult, "t")), as.character(paste(kid, adult, "s")), as.character(paste(kid, adult, "x"))) # as character k, l t/s/x 
+
+    c_new <- c(c_new, square)
+    
+  }
+  
+}
+```
+
+# ```{r}
+# # adult-kid
+# 
+# for (adult in l){
+#   
+#   for (kid in k) {
+#     c_sch <- c_orig[adult, kid] / UpdatedProportions5[10, adult-2]
+#     
+#     # calc teachers-kids
+#     k_t_in_l <- (c_sch * s_tl[[adult-2]]) / (alpha * s_sl[[adult-2]] + beta * s_xl[[adult-2]] + s_tl[[adult-2]])
+#     
+#     # calc staff-kids
+#     k_s_in_l <- alpha * s_sl[[adult-2]] * k_t_in_l / s_tl[[adult-2]] 
+#     
+#     # calc parents-kids
+#     k_x_in_l <- beta * s_xl[[adult-2]] * k_t_in_l / s_tl[[adult-2]]
+#     
+#     # store 
+#     square <- c(k_t_in_l, k_s_in_l, k_x_in_l)
+#     names(square) <- c(as.character(paste(adult, kid, "t")), as.character(paste(adult, kid, "s")), as.character(paste(adult, kid, "x"))) # as character k, l t/s/x
+#   
+#     c_new <- c(c_new, square)
+#     
+#   }
+#   
+# }
+# 
+# ```
+
+
+```{r}
+# adult-kid :  MODIFICATIONS
+
+for (adult in l){
+  if (adult == 3) { # 18-25 group
+    alpha_a <- alpha_18
+    beta_a <- beta_18
+  } else {
+    alpha_a <- alpha
+    beta_a <- beta
+  }
+  
+  for (kid in k) {
+    # c_sch <- c_orig[adult, kid] / UpdatedProportions5[10, adult-2]
+    c_org <- c_orig[adult, kid] # original contacts
+    
+    # Proportion of age group that is teacher, staff, other
+    s_t <- UpdatedProportions5[6,adult-2] # teachers
+    s_s <- UpdatedProportions5[7,adult-2] # staff
+    s_x <- UpdatedProportions5[8,adult-2] # others
+    
+    # teachers - children contacts, others are computed as a proportion of those
+    c_ak_hat <- c_org / (s_t + s_s*alpha_a + s_x * beta_a)
+    
+    # calc teachers-kids
+    # k_t_in_l <- (c_sch * s_tl[[adult-2]]) / (alpha * s_sl[[adult-2]] + beta * s_xl[[adult-2]] + s_tl[[adult-2]])
+    k_t_in_l <- c_ak_hat
+    
+    # calc staff-kids
+    # k_s_in_l <- alpha * s_sl[[adult-2]] * k_t_in_l / s_tl[[adult-2]] 
+    k_s_in_l <- c_ak_hat * alpha_a
+    
+    # calc parents-kids
+    # k_x_in_l <- beta * s_xl[[adult-2]] * k_t_in_l / s_tl[[adult-2]]
+    k_x_in_l <- c_ak_hat * beta_a
+    
+    # store 
+    square <- c(k_t_in_l, k_s_in_l, k_x_in_l)
+    names(square) <- c(as.character(paste(adult, kid, "t")), as.character(paste(adult, kid, "s")), as.character(paste(adult, kid, "x"))) # as character k, l t/s/x
+  
+    c_new <- c(c_new, square)
+    
+  }
+  
+}
+
+```
+
+# ```{r}
+# # adult-adult
+# 
+# for (adult_i in l) {
+#   
+#   for (adult_j in l) {
+#     
+#     c_sch <- c_orig[adult_i, adult_j] / UpdatedProportions5[10, adult_i-2]
+#     
+#     # employment subgroups 
+#     for (l_group1 in 1:3) {
+#       
+#       for (l_group2 in 1:3) {
+#         
+#          inner <- UpdatedProportions5[l_group1, adult_i-2] * UpdatedProportions5[l_group2, adult_j-2] * c_sch
+#          
+#          square <- c(inner)
+#          names(square) <- c(as.character(paste(adult_i, subgroups[l_group1], adult_j, subgroups[l_group2])))
+#     
+#          c_new <- c(c_new, square)
+#         
+#       }
+#       
+#     }
+# 
+#   }
+# 
+# }
+# ```
+
+```{r}
+# adult-adult: MODIFICATIONS
+multipliers <- c(alpha,1,beta) # teacher, staff, other
+
+for (adult_i in l) {
+  if (adult_i == 3) { # 18-25 group
+    alpha_i <- alpha_18
+    beta_i <- beta_18
+    multipliers_i <- c(alpha_18,1,beta_18) # teacher, staff, other
+  } else {
+    alpha_i <- alpha
+    beta_i <- beta
+    multipliers_i <- multipliers
+  }
+  
+  for (adult_j in l) {
+    
+    # c_sch <- c_orig[adult_i, adult_j] / UpdatedProportions5[10, adult_i-2]
+    c_org <- c_orig[adult_i, adult_j] # original contacts
+    
+    # Proportion of age group that is teacher, staff, other
+    s_t <- UpdatedProportions5[6,adult_i-2] # teachers
+    s_s <- UpdatedProportions5[7,adult_i-2] # staff
+    s_x <- UpdatedProportions5[8,adult_i-2] # others
+    
+    # Contacts between staff in adult_i and all adults in adult_j
+    c_sj_hat <- c_org / (alpha_i * s_t + s_s + s_x * beta_i)
+    
+    # employment subgroups 
+    for (l_group1 in 1:3) {
+      m1 <- multipliers_i[l_group1]
+      
+      c_g1_j_hat <- m1 * c_sj_hat # contact adult i in work group 1 - all adult_j
+      c_g1_sj_hat <- c_g1_j_hat / sum(multipliers) # contact individual work group 1 - staff of adult_j
+      
+      
+      for (l_group2 in 1:3) {
+         m2 <- multipliers[l_group2]
+        
+         # inner <- UpdatedProportions5[l_group1, adult_i-2] * UpdatedProportions5[l_group2, adult_j-2] * c_sch
+         inner <- m2 * c_g1_sj_hat
+         
+         square <- c(inner)
+         names(square) <- c(as.character(paste(adult_i, subgroups[l_group1], adult_j, subgroups[l_group2])))
+    
+         c_new <- c(c_new, square)
+        
+      }
+      
+    }
+
+  }
+
+}
+```
+
+Format output file.
+```{r}
+new_names <- c("0-4", "5-17", "18-25 T", "18-25 S", "18-25 X", "26-49 T", "26-49 S", "26-49 X", "50-64 T", "50-64 S", "50-64 X", "65+ T", "65+ S", "65+ X")
+
+# child contacts
+r1 <- c_new[1:16]
+r1 <- r1[-3]
+r1 <- r1[-3]
+
+r2 <- c(c_new[3:4], c_new[17:28])
+c_new <- c_new[! c_new %in% c(r1, r2)]
+
+names(r1) <- NULL
+names(r2) <- NULL
+
+# separate into age groups i
+r3 <- c_new[1:6]
+r4 <- c_new[7:12]
+r5 <- c_new[13:18]
+r6 <- c_new[19:24]
+
+c_new <- c_new[! c_new %in% c(r3, r4, r5, r6)]
+
+r3 <- c(r3, c_new[1:36])
+r4 <- c(r4, c_new[37:72])
+r5 <- c(r5, c_new[73:108])
+r6 <- c(r6, c_new[109:144])
+
+names(r3) <- NULL
+names(r4) <- NULL
+names(r5) <- NULL
+names(r6) <- NULL
+
+# teachers
+idx_t <- c(1, 4, 7, 8, 9, 16, 17, 18, 25, 26, 27, 34, 35, 36)
+r3t <- r3[idx_t]
+r4t <- r4[idx_t]
+r5t <- r5[idx_t]
+r6t <- r6[idx_t]
+
+# staff
+idx_s <- c(2, 5, 10, 11, 12, 19, 20, 21, 28, 29, 30, 37, 38, 39)
+r3s <- r3[idx_s]
+r4s <- r4[idx_s]
+r5s <- r5[idx_s]
+r6s <- r6[idx_s]
+
+# other
+idx_x <- c(3, 6, 13, 14, 15, 22, 23, 24, 31, 32, 33, 40, 41, 42)
+r3x <- r3[idx_x]
+r4x <- r4[idx_x]
+r5x <- r5[idx_x]
+r6x <- r6[idx_x]
+
+outpt <- rbind(r1, r2, r3t, r3s, r3x, r4t, r4s, r4x, r5t, r5s, r5x, r6t, r6s, r6x)
+
+# add column and row names
+colnames(outpt) <- new_names
+rownames(outpt) <- new_names
+# write to csv
+outpt.df <- as.data.frame(outpt)
+write.csv(outpt.df, "School Contact Matrix 14x14_1 - MODIFIED.csv")
+```

@@ -1,0 +1,207 @@
+---
+title: "Teacher-Other Model"
+output: html_notebook
+---
+
+Import matrix of original home contacts with 6 age groups.
+```{r}
+c_orig <- read.csv("~/Desktop/Current Projects/COVID/teacher_SEIR-master/Teacher Matrices R/other_orig.csv", row.names=1)
+colnames(c_orig) <- row.names(c_orig)
+
+UpdatedProportions5 <- read.csv("~/Desktop/Current Projects/COVID/teacher_SEIR-master/Teacher Matrices R/UpdatedProportions5.csv", stringsAsFactors=FALSE, row.names = 1)
+# 
+# ag_props <- read.csv("~/Desktop/Current Projects/COVID/teacher_SEIR-master/Teacher Matrices R/ag_props_updated.csv", row.names=1, header = FALSE)
+```
+
+Designate child and adult age groups, as well as relevant parameters.
+```{r}
+k <- c(1, 2) # child age groups
+l <- c(3, 4, 5, 6) # adult age groups
+
+# contact parameters - relative rates between t, s, v
+# t/s/v/x corresponds to (teacher/staff/visitors/none)
+# none = group outside of school environment
+
+# ag_props[1,] -> g_t
+# ag_props[2,] -> g_s
+# ag_props[3,] -> g_v
+# ag_props[4,] -> g_x
+
+# ag_props[5,] -> a_t  
+# ag_props[6,] -> a_s
+# ag_props[7,] -> a_v
+# ag_props[8,] -> a_x
+
+a_t <- UpdatedProportions5[6,]
+a_s <- UpdatedProportions5[7,]
+a_x <- UpdatedProportions5[8,]
+
+# initialize vector of new contacts
+c_new <- c()
+
+```
+
+```{r}
+# kid-kid: same as original
+for (kid_i in k) {
+  
+  for (kid_j in k) {
+    
+    square <- c_orig[kid_i, kid_j]
+    names(square) <- c(as.character(paste(kid_i, kid_j)))
+    c_new <- c(c_new, square)
+    
+  }
+}
+```
+
+
+```{r}
+# kid-adult
+
+for (kid in k){
+  
+  for (adult in l) {
+    # portioning out among employment groups
+    
+    # kids-teachers
+    k_l_t <- c_orig[kid, adult] * a_t[[adult-2]] 
+    
+    # kids-staff
+    k_l_s <- c_orig[kid, adult] * a_s[[adult-2]]
+    
+    # kids-other
+    k_l_x <- c_orig[kid, adult] * a_x[[adult-2]]
+    
+    # store
+    square <- c(k_l_t, k_l_s, k_l_x)
+    
+    names(square) <- c(as.character(paste(kid, adult, "t")), as.character(paste(kid, adult, "s")), as.character(paste(kid, adult, "x"))) # as character k, l t/s/x 
+
+    c_new <- c(c_new, square)
+    
+  }
+  
+}
+```
+
+Contact patterns are assumed to be the same regardless of employment
+```{r}
+# adult-kid
+
+for (adult in l){
+  
+  for (kid in k) {
+    
+    # calc teachers-kids
+    k_l_t <- c_orig[adult, kid] 
+    
+    # calc staff-kids
+    k_l_s <- c_orig[adult, kid] 
+    
+    # calc other-kids
+    k_l_x <- c_orig[adult, kid] 
+    
+    # store
+    square <- c(k_l_t, k_l_s, k_l_x)
+    names(square) <- c(as.character(paste(adult, kid, "t")), as.character(paste(adult, kid, "s")), as.character(paste(adult, kid, "x"))) # as character k, l t/s/x
+  
+    c_new <- c(c_new, square)
+    
+  }
+  
+}
+```
+
+```{r}
+# adult-adult
+subgroups <- c("t", "s", "x")
+
+for (adult_i in l) {
+  
+  for (l_group1 in 1:3) {
+    
+    # employment subgroups 
+     for (adult_j in l) {
+      
+      for (l_group2 in 1:3) {
+        
+        inner <- c_orig[adult_i, adult_j] * UpdatedProportions5[l_group2+5, adult_j-2] 
+         
+        square <- c(inner)
+        names(square) <- c(as.character(paste(adult_i, subgroups[l_group1], adult_j, subgroups[l_group2])))
+
+        c_new <- c(c_new, square)
+        
+      }
+      
+    }
+
+  }
+
+}
+```
+
+Format output file.
+```{r}
+new_names <- c("0-4", "5-17", "18-25 T", "18-25 S", "18-25 X", "26-49 T", "26-49 S", "26-49 X", "50-64 T", "50-64 S", "50-64 X", "65+ T", "65+ S", "65+ X")
+
+# child contacts
+r1 <- c_new[1:16]
+r1 <- r1[-3]
+r1 <- r1[-3]
+
+r2 <- c(c_new[3:4], c_new[17:28])
+
+names(r1) <- NULL
+names(r2) <- NULL
+
+# separate into age groups i
+r3 <- c_new[29:34]
+r4 <- c_new[35:40]
+r5 <- c_new[41:46]
+r6 <- c_new[47:52]
+
+r3 <- c(r3, c_new[53:88])
+r4 <- c(r4, c_new[89:124])
+r5 <- c(r5, c_new[125:160])
+r6 <- c(r6, c_new[161:196])
+
+names(r3) <- NULL
+names(r4) <- NULL
+names(r5) <- NULL
+names(r6) <- NULL
+
+# teachers
+idx_t <- c(1, 4, 7:18)
+r3t <- r3[idx_t]
+r4t <- r4[idx_t]
+r5t <- r5[idx_t]
+r6t <- r6[idx_t]
+
+# staff
+idx_s <- c(2, 5, 19:30)
+r3s <- r3[idx_s]
+r4s <- r4[idx_s]
+r5s <- r5[idx_s]
+r6s <- r6[idx_s]
+
+# other
+idx_x <- c(3, 6, 31:42)
+r3x <- r3[idx_x]
+r4x <- r4[idx_x]
+r5x <- r5[idx_x]
+r6x <- r6[idx_x]
+
+outpt <- rbind(r1, r2, r3t, r3s, r3x, r4t, r4s, r4x, r5t, r5s, r5x, r6t, r6s, r6x)
+
+# add column and row names
+colnames(outpt) <- new_names
+rownames(outpt) <- new_names
+
+# write to csv
+outpt.df <- as.data.frame(outpt)
+
+write.csv(outpt.df, "Other Contact Matrix 14x14_1.csv")
+```
+

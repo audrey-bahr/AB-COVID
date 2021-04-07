@@ -1,0 +1,84 @@
+---
+title: "Figures 2"
+author: "Audrey Bahr"
+date: "4/3/21"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+library(cowplot)
+library(glue)
+library(colorspace)
+```
+
+```{r}
+file_name <- function(rate_count, s_num, cumul_curr, type, ag) {
+  lab <- glue("{rate_count}_scenario_idx_{s_num}_{cumul_curr}_{type}_{ag}.csv")
+  return(lab)
+}
+```
+
+
+```{r}
+new_names <- c("0-4", "5-17", "18-25 T", "18-25 S", "18-25 X", "26-49 T", "26-49 S", "26-49 X", "50-64 T", "50-64 S", "50-64 X", "65+ T", "65+ S", "65+ X")
+
+t_pop <- sum(austin_pop$X18.25.T, austin_pop$X26.49.T, austin_pop$X50.64.T, austin_pop$X65..T)
+  
+s_pop <- sum(austin_pop$X18.25.S, austin_pop$X26.49.S, austin_pop$X50.64.S, austin_pop$X65..S)
+  
+x_pop <- sum(austin_pop$X18.25.X, austin_pop$X26.49.X, austin_pop$X50.64.X, austin_pop$X65..X)
+
+#changeable
+rate_count <- "count"
+s_num <- "2"
+option <- "current"
+type <- "symp_inf"
+```
+
+
+```{r}
+wd <- glue("/Users/audrey/Desktop/Current Projects/COVID/teacher_SEIR-master/outputs_test/scenario_idx_{s_num}")
+setwd(wd)
+files <- list()
+for (i in 1:12) {
+  
+  ag <- new_names[i+2]
+  files[i] <- file_name(rate_count, s_num, option, type, ag)
+  
+}
+
+for (i in 1:12) {
+  
+  assign(paste0(type, option, s_num, new_names[i+2]), read_csv(files[[i]], col_names = TRUE))
+}
+```
+
+why are these files identical?
+```{r}
+identical(`infect018-25 T`, `symp_infcurrent218-25 T`)
+
+# these are not identical
+identical(`infect018-25 S`, `symp_infcurrent218-25 X`)
+identical(`infect018-25 T`, `symp_infcurrent218-25 S`)
+
+identical(`infectionsincident018-25 S`, `infect018-25 S`)
+```
+
+Incident Infections for T, S, X
+```{r}
+t_rate <- (`infectionsincident018-25 T`$median + `infectionsincident026-49 T`$median + `infectionsincident050-64 T`$median + `infectionsincident065+ T`$median) / t_pop
+
+s_rate <- (`infectionsincident018-25 S`$median + `infectionsincident026-49 S`$median + `infectionsincident050-64 S`$median + `infectionsincident065+ S`$median) / s_pop
+
+x_rate <- (`infectionsincident018-25 X`$median + `infectionsincident026-49 X`$median + `infectionsincident050-64 X`$median + `infectionsincident065+ X`$median) / x_pop
+
+infincidents_0_plot <- data.frame(cbind(select(`infect018-25 S`, date), t_rate, s_rate, x_rate))
+
+ggplot(infincidents_0_plot, aes(date, x_rate, color = "Other")) + geom_line() + geom_line(aes(date, s_rate, color = "Staff")) + geom_line(aes(date, t_rate, color = "Teachers"), size = .3) + theme_minimal() + ggtitle("Rate of Incident Infections") + xlab(NULL) + ylab("Rate") + scale_color_discrete_qualitative() + labs(color = "Employment Group") + guides(color = guide_legend(reverse=TRUE)) + scale_x_date(limits = c(as.Date("2020-02-15"), as.Date("2020-04-01")))
+```
+
+```{r}
+setwd("/Users/audrey/Desktop/Current Projects/COVID/teacher_SEIR-master/outputs_test/scenario_idx_0")
+
+```
+

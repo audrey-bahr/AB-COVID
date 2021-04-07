@@ -1,0 +1,10 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Creating Austin population file - sorting into age, employment, and low/high risk groups.
+```{r}
+popdata <- read.csv("~/Desktop/Current Projects/COVID/teacher_SEIR-master/Teacher Matrices R/popdata.csv", row.names = 1)
+```
+

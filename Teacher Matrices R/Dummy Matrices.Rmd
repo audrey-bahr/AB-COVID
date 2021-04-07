@@ -1,0 +1,55 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Placeholder 18x18 matrices.
+
+Work
+```{r}
+work.df <- outpt.df
+
+for (i in 1:nrow(work.df)) {
+  
+  for (j in 1:ncol(work.df)) {
+    
+    work.df[i, j] <- 0
+    
+  }
+}
+write.csv(outpt.df, "Work (Dummy) Contact Matrix 18x18.csv")
+```
+
+Home
+```{r}
+home.df <- outpt.df
+
+for (i in 1:nrow(home.df)) {
+  
+  for (j in 1:ncol(home.df)) {
+    
+    home.df[i, j] <- 0.1
+    
+  }
+}
+write.csv(outpt.df, "Home (Dummy) Contact Matrix 18x18.csv")
+```
+
+Other
+```{r}
+other.df <- outpt.df
+
+for (i in 1:nrow(other.df)) {
+  
+  for (j in 1:ncol(other.df)) {
+    
+    other.df[i, j] <- 0.2
+    
+  }
+}
+write.csv(outpt.df, "Other (Dummy) Contact Matrix 18x18.csv")
+```
+
+"0-4"     "5-17"    "18-25 T" "18-25 S" "18-25 V" "18-25 X" "26-49 T" "26-49 S"
+ "26-49 V" "26-49 X" "50-64 T" "50-64 S" "50-64 V" "50-64 X" "65+ T"   "65+ S"  
+"65+ V"   "65+ X"  
