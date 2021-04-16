@@ -353,7 +353,7 @@ def SEIR_model_publish_w_risk(metro_pop, school_calendar, beta0, phi, sigma,
                             (omega_a[a2] * compt_ia[t - 1, a2, r2] + \
                             omega_y[a2] * compt_iy[t - 1, a2, r2] + \
                             omega_pa[a2] * compt_pa[t - 1, a2, r2] + \
-                            omega_py[a2] * compt_py[t - 1, a2, r2]) + \
+                            omega_py[a2] * compt_py[t - 1, a2, r2]) / \
                             np.sum(metro_pop[a2])
                                                 
                 if np.isnan(rate_s2e):
