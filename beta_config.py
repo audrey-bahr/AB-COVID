@@ -42,7 +42,7 @@ elif run_subgroup == 'Teachers':
     prop_school_sd = [0, 0.25, 0.50, 0.75, 1]
     #prop_gen_sd # 1 value, (line 95)
     # susceptibility/infectiousness parameters
-    suscep_list = [[1.25, 1.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+    suscep_list = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
     # should still result in 5 sims - list of length 1; change first two values for kids (1-1.25) and 1s for the rest
     infect_list = [[1.25, 1.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
   
@@ -88,13 +88,13 @@ CLOSE_TRIGGER_LIST = ['date__20300319']    # '''change - 20220319? school closur
 REOPEN_TRIGGER_LIST = ['no_na_' + FallStartDate]
 SD_DATE_FIT = [20200324, 20200818]
 SD_LEVEL_LIST_FIT = [0.5] # fitted up to 4/8
-SD_DATE = [20300324, 20400101]
+SD_DATE = [20200324, 20300101] # 
 SD_LEVEL_LIST = [0.746873309820472] # fitted up to 4/19 # general population parameter
 MONITOR_LAG = 0  # 0 days monitor lag
 REPORT_RATE = 1.
 
 # Epidemiological parameters
-BETA0_dict = {'high': 0.0230246324976167} # fitted up to 4/19 # make lower - 0.0530246324976167 to 
+BETA0_dict = {'high': 0.01921} # fitted up to 4/19 # make lower - 0.0530246324976167 to 0.0230246324976167
 
     #'''start_condition - corresponds to infected in each age group
     #    start with >1 infected
