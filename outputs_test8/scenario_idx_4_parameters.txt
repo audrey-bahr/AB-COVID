@@ -1,0 +1,1 @@
+{'growth_rate': 'high', 'social_distancing': 0, 'school_close_triggers': 'date__20300319', 'school_reopen_triggers': 'no_na_20200818', 'subgroup': 'Teachers', 'prop_school_sd': 1, 'suscep_param': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 'infect_param': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}

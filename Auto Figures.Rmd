@@ -37,6 +37,7 @@ k2_pop <- sum(austin_pop[1,4] + austin_pop[2,4])
 ```
 
 Input parts of the file names. Returns a ggplot figure.
+(Assuming we're only looking at symptomatic infectious - otherwise the plot title needs to be edited)
 ```{r}
 covid_autoplot <- function(
   rate_count = "count", s_num = "0", option = "cumulative", type = "symp_inf"
@@ -108,7 +109,7 @@ covid_autoplot <- function(
 ```
 
 ```{r}
-g <- covid_autoplot(type = "infections")
+g <- covid_autoplot()
 g
 ```
 
