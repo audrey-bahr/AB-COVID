@@ -1,0 +1,115 @@
+---
+title: "Figures - Automated"
+author: "Audrey Bahr"
+date: "4.28.21"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(cowplot)
+library(glue)
+library(colorspace)
+```
+
+```{r}
+file_name <- function(rate_count, s_num, cumul_curr, type, ag) {
+  lab <- glue("{rate_count}_scenario_idx_{s_num}_{cumul_curr}_{type}_{ag}.csv")
+  return(lab)
+}
+
+new_names <- c("0-4", "5-17", "18-25 T", "18-25 S", "18-25 X", "26-49 T", "26-49 S", "26-49 X", "50-64 T", "50-64 S", "50-64 X", "65+ T", "65+ S", "65+ X")
+
+wd <- glue("/Users/audrey/Desktop/Current Projects/COVID/teacher_SEIR-master/AB-COVID/Teacher Matrices R")
+setwd(wd)
+austin_pop <- read_csv("Austin Population - 6 age groups, school employment.csv")
+
+# calculate populations of different age groups
+t_pop <- sum(austin_pop$`18-25 T`, austin_pop$`26-49 T`, austin_pop$`50-64 T`, austin_pop$`65+ T`)
+  
+s_pop <- sum(austin_pop$`18-25 S`, austin_pop$`26-49 S`, austin_pop$`50-64 S`, austin_pop$`65+ S`)
+  
+x_pop <- sum(austin_pop$`18-25 X`, austin_pop$`26-49 X`, austin_pop$`50-64 X`, austin_pop$`65+ X`)
+
+k1_pop <- sum(austin_pop[1,3] + austin_pop[2,3])
+
+k2_pop <- sum(austin_pop[1,4] + austin_pop[2,4])
+```
+
+Input parts of the file names. Returns a ggplot figure.
+```{r}
+covid_autoplot <- function(
+  rate_count = "count", s_num = "0", option = "cumulative", type = "symp_inf"
+) {
+  
+    # set wd to location of output files
+  wd <- glue("/Users/audrey/Desktop/Current Projects/COVID/teacher_SEIR-master/AB-COVID/outputs_test/scenario_idx_{s_num}")
+  setwd(wd)
+  
+  t_med <- 0
+  s_med <- 0
+  x_med <- 0
+  
+  files <- list()
+  for (i in 1:14) {
+  
+    # read in files in output_test folder
+    ag <- new_names[i]
+    files[i] <- file_name(rate_count, s_num, option, type, ag)
+    df <- read_csv(files[[i]], col_names = TRUE)
+    
+    if (i == 1) {
+      k1_rate <- df$median / k1_pop
+      # save date column once for plot
+    }
+    
+    if (i == 2) {
+      k2_rate <- df$median / k2_pop
+    }
+    
+    # teachers
+    if (i %in% c(3, 6, 9, 12)) {
+      t_med <- t_med + df$median
+    }
+    
+    # staff
+    if (i %in% c(4, 7, 10, 13)) {
+      s_med <- s_med + df$median
+    }
+    
+    # other
+    if (i %in% c(5, 8, 11, 14)) {
+      x_med <- x_med + df$median
+    }
+    
+  }
+  
+  t_rate <- t_med / t_pop
+  s_rate <- s_med / s_pop
+  x_rate <- x_med / x_pop
+  
+  plot_data <- data.frame(cbind(select(df, date), t_rate, s_rate, x_rate, k1_rate, k2_rate))
+  
+  g <- ggplot(plot_data, aes(date, x_rate, color = "Other")) + 
+  geom_line() + 
+  geom_line(aes(date, s_rate, color = "Staff")) + 
+  geom_line(aes(date, t_rate, color = "Teachers")) + 
+  geom_line(aes(date, k1_rate, color = "Kids (0-4)")) + 
+  geom_line(aes(date, k2_rate, color = "Kids (5-17)")) + 
+  theme_minimal() + 
+  ggtitle("Cumulative Rate of Infection", subtitle = glue("Symptomatic Individuals, Contact Reduction = {s_num}")) +
+  xlab(NULL) + 
+  ylab("Rate") + 
+  scale_color_discrete_qualitative() + 
+  labs(color = "Employment Group") + 
+  guides(color = guide_legend())
+
+}
+```
+
+```{r}
+g <- covid_autoplot(type = "infections")
+g
+```
+
+
