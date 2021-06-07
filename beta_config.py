@@ -36,15 +36,15 @@ elif run_subgroup == 'Construction':
 elif run_subgroup == 'Teachers':
     # adult age groups split into employment categories result in > 6 groups
     # size of matrices is 14x14
-    N_AGE = 14 # with t, s, v and not x
+    N_AGE = 14 # with t, s, v
 
     # proportion of people in school (s, t, x)
     prop_school_sd = [0, 0.25, 0.50, 0.75, 1]
-    #prop_gen_sd # 1 value, (line 95)
+    #prop_gen_sd: 1 value, (line 95)
     # susceptibility/infectiousness parameters
     suscep_list = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
-    # should still result in 5 sims - list of length 1; change first two values for kids (1-1.25) and 1s for the rest
-    infect_list = [[1.25, 1.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+    # should still result in 5 sims - list of length 1; change first two values for kids and 1s for the rest
+    infect_list = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
   
     # add to dictionary
 
@@ -74,22 +74,23 @@ AgeGroupDict, MetroPop, SchoolCalendar, TimeBegin, FallStartDate, Phi, \
 
 # Simulation parameters
 SHIFT_WEEK = 0
-TIME_BEGIN_SIM = 20200215 # 20210105 # AISD start date
+TIME_BEGIN_SIM = 20200215 # 20200215 | 20200815
 # Time intervals in each day, determines time-step
 INTERVAL_PER_DAY = 10
 NUM_SIM_FIT = 1
 NUM_SIM = 1
-TOTAL_TIME = 7 * 25
+TOTAL_TIME = 18 * 25 # num weeks - extend duration, about a year (12 * 26)
 VERBOSE = False
 
 # School closure parameters
 TRIGGER_TYPE = 'cml'
-CLOSE_TRIGGER_LIST = ['date__20300319']    # '''change - 20220319? school closure date'''
+CLOSE_TRIGGER_LIST = ['date__20300319']    # school closure date
 REOPEN_TRIGGER_LIST = ['no_na_' + FallStartDate]
-SD_DATE_FIT = [20200324, 20200818]
+SD_DATE_FIT = [20200324, 20211231] #original - 20200324, 20211231 | 20200824, 20211231
 SD_LEVEL_LIST_FIT = [0.5] # fitted up to 4/8
-SD_DATE = [20200324, 20300101] # 
-SD_LEVEL_LIST = [0.746873309820472] # fitted up to 4/19 # general population parameter
+SD_DATE = [20200324, 20300101] #original - 20200324, 20300101 | 20200824, 20300101
+SD_LEVEL_LIST = [0] # fitted up to 4/19 # general population parameter
+# 0.746873309820472 to 0
 MONITOR_LAG = 0  # 0 days monitor lag
 REPORT_RATE = 1.
 
@@ -103,7 +104,7 @@ START_CONDITION = 1
 
 # initial infections
 # start condition - 1 infected in each group?
-# what are the rows/columns here?
+
 I0 = np.array([[0, 0], [0, 0], [START_CONDITION, 0], [0, 0], [0, 0]])
 
 if run_subgroup is not None:
@@ -111,5 +112,7 @@ if run_subgroup is not None:
         I0 = np.append(I0,np.zeros((1,N_RISK)),axis=0)
     # format for I0 - 14 pairs 
     elif run_subgroup == 'Teachers':
+        #I2 = np.array([[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
+        #I0 = np.append(I0, I2, axis=0)
         I0 = np.append(I0,np.zeros((9,N_RISK)),axis=0) 
         

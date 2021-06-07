@@ -40,7 +40,7 @@ Input parts of the file names. Returns a ggplot figure.
 (Assuming we're only looking at symptomatic infectious - otherwise the plot title needs to be edited)
 ```{r}
 covid_autoplot <- function(
-  rate_count = "count", s_num = "0", option = "cumulative", type = "symp_inf"
+  rate_count = "count", s_num = "0", option = "current", type = "symp_inf"
 ) {
   
     # set wd to location of output files
@@ -88,17 +88,19 @@ covid_autoplot <- function(
   t_rate <- t_med / t_pop
   s_rate <- s_med / s_pop
   x_rate <- x_med / x_pop
+  sd <- c(0, 0.25, 0.5, 0.75, 1)
+  sd_trial <- sd[as.integer(s_num) + 1]
   
   plot_data <- data.frame(cbind(select(df, date), t_rate, s_rate, x_rate, k1_rate, k2_rate))
   
   g <- ggplot(plot_data, aes(date, x_rate, color = "Other")) + 
   geom_line() + 
   geom_line(aes(date, s_rate, color = "Staff")) + 
-  geom_line(aes(date, t_rate, color = "Teachers")) + 
-  geom_line(aes(date, k1_rate, color = "Kids (0-4)")) + 
-  geom_line(aes(date, k2_rate, color = "Kids (5-17)")) + 
+  geom_line(aes(date, t_rate, color = "Teachers"), alpha = 0.25) + 
+  geom_line(aes(date, k1_rate, color = "Kids (0-4)"), alpha = 0.5) + 
+  geom_line(aes(date, k2_rate, color = "Kids (5-17)"), alpha = 0.5) + 
   theme_minimal() + 
-  ggtitle("Cumulative Rate of Infection", subtitle = glue("Symptomatic Individuals, Contact Reduction = {s_num}")) +
+  ggtitle("Current Rate of Infection", subtitle = glue("Symptomatic Individuals, Contact Reduction = {sd_trial}")) +
   xlab(NULL) + 
   ylab("Rate") + 
   scale_color_discrete_qualitative() + 
@@ -111,6 +113,248 @@ covid_autoplot <- function(
 ```{r}
 g <- covid_autoplot()
 g
+
+h <- covid_autoplot(s_num = "3")
+h
 ```
+
+```{r}
+covid_autoplot2 <- function(
+  rate_count = "count", s_num = "0", option = "current", type = "symp_inf"
+) {
+  
+    # set wd to location of output files
+  wd <- glue("/Users/audrey/Desktop/Current Projects/COVID/teacher_SEIR-master/AB-COVID/outputs_test/scenario_idx_{s_num}")
+  setwd(wd)
+  
+  t_med <- 0
+  s_med <- 0
+  x_med <- 0
+  
+  files_presymp <- list()
+  files_preasymp <- list()
+  files_asymp <- list()
+  files_symp <- list()
+  for (i in 1:14) {
+  
+    # read in files in output_test folder
+    ag <- new_names[i]
+    files_presymp[i] <- file_name(rate_count, s_num, option, "pre_symp", ag)
+    files_preasymp[i] <- file_name(rate_count, s_num, option, "pre_asymp", ag)
+    files_asymp[i] <- file_name(rate_count, s_num, option, "asymp_inf", ag)
+    files_symp[i] <- file_name(rate_count, s_num, option, "symp_inf", ag)
+    
+    df_presymp <- read_csv(files_presymp[[i]], col_names = TRUE)
+    df_preasymp <- read_csv(files_preasymp[[i]], col_names = TRUE)
+    df_asymp <- read_csv(files_asymp[[i]], col_names = TRUE)
+    df_symp <- read_csv(files_symp[[i]], col_names = TRUE)
+    
+    if (i == 1) {
+      k1_rate <- (df_preasymp$median + df_presymp$median + df_asymp$median + df_symp$median) / k1_pop
+      # save date column once for plot
+    }
+    
+    if (i == 2) {
+      k2_rate <- (df_preasymp$median + df_presymp$median + df_asymp$median + df_symp$median) / k2_pop
+    }
+    
+    # teachers
+    if (i %in% c(3, 6, 9, 12)) {
+      t_med <- t_med + (df_preasymp$median + df_presymp$median + df_asymp$median + df_symp$median)
+    }
+    
+    # staff
+    if (i %in% c(4, 7, 10, 13)) {
+      s_med <- s_med + (df_preasymp$median + df_presymp$median + df_asymp$median + df_symp$median)
+    }
+    
+    # other
+    if (i %in% c(5, 8, 11, 14)) {
+      x_med <- x_med + (df_preasymp$median + df_presymp$median + df_asymp$median + df_symp$median)
+    }
+    
+  }
+  
+  t_rate <- t_med / t_pop
+  s_rate <- s_med / s_pop
+  x_rate <- x_med / x_pop
+  sd <- c(0, 0.25, 0.5, 0.75, 1)
+  sd_trial <- sd[as.integer(s_num) + 1]
+  
+  plot_data <- data.frame(cbind(select(df_asymp, date), t_rate, s_rate, x_rate, k1_rate, k2_rate))
+  
+  g <- ggplot(plot_data, aes(date, x_rate, color = "Other")) + 
+  geom_line() + 
+  geom_line(aes(date, s_rate, color = "Staff")) + 
+  geom_line(aes(date, t_rate, color = "Teachers"), alpha = 0.25) + 
+  geom_line(aes(date, k1_rate, color = "Kids (0-4)"), alpha = 0.5) + 
+  geom_line(aes(date, k2_rate, color = "Kids (5-17)"), alpha = 0.5) + 
+  theme_minimal() + 
+  ggtitle("Current Rate of Infection", subtitle = glue("All Infected, Contact Reduction = {sd_trial}")) +
+  xlab(NULL) + 
+  ylab("Rate") + 
+  scale_color_discrete_qualitative() + 
+  labs(color = "Employment Group") + 
+  guides(color = guide_legend())
+
+}
+```
+
+Removed counting of pre-symptomatic and pre-asymptomatic (don't want to double count)
+```{r}
+covid_autoplot3 <- function(
+  rate_count = "count", s_num = "0", option = "current", type = "symp_inf"
+) {
+  
+    # set wd to location of output files
+  wd <- glue("/Users/audrey/Desktop/Current Projects/COVID/teacher_SEIR-master/AB-COVID/outputs_test/scenario_idx_{s_num}")
+  setwd(wd)
+  
+  t_med <- 0
+  s_med <- 0
+  x_med <- 0
+  
+  files_asymp <- list()
+  files_symp <- list()
+  for (i in 1:14) {
+  
+    # read in files in output_test folder
+    ag <- new_names[i]
+    
+    files_asymp[i] <- file_name(rate_count, s_num, option, "asymp_inf", ag)
+    files_symp[i] <- file_name(rate_count, s_num, option, "symp_inf", ag)
+    
+    df_asymp <- read_csv(files_asymp[[i]], col_names = TRUE)
+    df_symp <- read_csv(files_symp[[i]], col_names = TRUE)
+    
+    if (i == 1) {
+      k1_rate <- (df_asymp$median + df_symp$median) / k1_pop
+      # save date column once for plot
+    }
+    
+    if (i == 2) {
+      k2_rate <- (df_asymp$median + df_symp$median) / k2_pop
+    }
+    
+    # teachers
+    if (i %in% c(3, 6, 9, 12)) {
+      t_med <- t_med + (df_asymp$median + df_symp$median)
+    }
+    
+    # staff
+    if (i %in% c(4, 7, 10, 13)) {
+      s_med <- s_med + (df_asymp$median + df_symp$median)
+    }
+    
+    # other
+    if (i %in% c(5, 8, 11, 14)) {
+      x_med <- x_med + (df_asymp$median + df_symp$median)
+    }
+    
+  }
+  
+  t_rate <- t_med / t_pop
+  s_rate <- s_med / s_pop
+  x_rate <- x_med / x_pop
+  sd <- c(0, 0.25, 0.5, 0.75, 1)
+  sd_trial <- sd[as.integer(s_num) + 1]
+  
+  plot_data <- data.frame(cbind(select(df_asymp, date), t_rate, s_rate, x_rate, k1_rate, k2_rate))
+  
+  g <- ggplot(plot_data, aes(date, x_rate, color = "Other")) + 
+  geom_line() + 
+  geom_line(aes(date, s_rate, color = "Staff")) + 
+  geom_line(aes(date, t_rate, color = "Teachers"), alpha = 0.25) + 
+  geom_line(aes(date, k1_rate, color = "Kids (0-4)"), alpha = 0.5) + 
+  geom_line(aes(date, k2_rate, color = "Kids (5-17)"), alpha = 0.5) + 
+  theme_minimal() + 
+  ggtitle("Current Rate of Infection", subtitle = glue("All Infected, Contact Reduction = {sd_trial}")) +
+  xlab(NULL) + 
+  ylab("Rate") + 
+  scale_color_discrete_qualitative() + 
+  labs(color = "Employment Group") + 
+  guides(color = guide_legend())
+
+}
+```
+
+
+
+
+```{r}
+g <- covid_autoplot3()
+g
+
+h <- covid_autoplot3(s_num = "3")
+h
+```
+
+Varying infectiousness and susceptibility rates - their effects on cumulative infections.
+
+BETA = 0.01921
+Start Condition = 1
+
+```{r}
+kidparam_plot <- function(
+  rate_count = "count", s_num = "0", option = "cumulative"
+) {
+  
+    # set wd to location of output files
+  wd <- glue("/Users/audrey/Desktop/Current Projects/COVID/teacher_SEIR-master/AB-COVID/outputs_test/scenario_idx_{s_num}")
+  setwd(wd)
+  
+  files_asymp <- list()
+  files_symp <- list()
+  total_infect <- 0
+  
+  for (i in 1:14) {
+  
+    # read in files in output_test folder
+    ag <- new_names[i]
+    
+    files_asymp[i] <- file_name(rate_count, s_num, option, "asymp_inf", ag)
+    files_symp[i] <- file_name(rate_count, s_num, option, "symp_inf", ag)
+    
+    df_asymp <- read_csv(files_asymp[[i]], col_names = TRUE)
+    df_symp <- read_csv(files_symp[[i]], col_names = TRUE)
+    
+    total_infect <- total_infect + df_asymp$median + df_symp$median
+    
+  }
+
+  return(total_infect)
+ 
+}
+```
+
+
+```{r}
+x <- seq(0.5, 1.5, 0.1)
+xy <- combn(x, 2)
+
+infect <- xy[1,]
+suscep <- xy[2,]
+
+infect <- c(x, infect)
+suscep <- c(x, suscep)
+
+params <- data.frame(infect, suscep)
+params$total_infect <- 0
+```
+
+```{r}
+total_infect <- 0
+```
+
+
+```{r}
+wd <- "/Users/audrey/Desktop/Current Projects/COVID/teacher_SEIR-master/AB-COVID/outputs_test/scenario_idx_0"
+setwd(wd)
+
+count_scenario_idx_0_cumulative_infections_Total <- read_csv("outputs_test/scenario_idx_0/count_scenario_idx_0_cumulative_infections_Total.csv")
+total_infect <- total_infect + max(count_scenario_idx_0_cumulative_infections_Total$median)
+```
+
+
 
 
